@@ -5,7 +5,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f9fafc;--card:#fff;--ink:#0f172a;--soft:#64748b;--line:#e2e8f0;--chip:#e2e8f0;--pink:#ff7a8a;--ok:#16a34a;--okbg:#e8f8ee;--bad:#e11d48;--badbg:#ffe9ee;--fs:16px}
-[data-theme=dark]{--bg:#0f1420;--card:#171e2d;--ink:#f1f5f9;--soft:#94a3b8;--line:#2a3447;--chip:#232c3e;--okbg:#10301e;--badbg:#3a1520}
 *{box-sizing:border-box}html{font-size:var(--fs)}
 body{margin:0;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,-apple-system,Segoe UI,sans-serif;font-weight:600;min-height:100vh}
 button{font:inherit;color:inherit;cursor:pointer}
@@ -69,20 +68,20 @@ const TOPICS=[{"id": "numsys", "title": "Number Systems", "sub": "Binary, octal,
 const COL=["#ff7a8a","#fbbf24","#34d399","#60a5fa","#a78bfa","#fb923c"];
 const $=s=>document.querySelector(s),app=$("#app");
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-let mem={best:{},theme:"light",fs:16};
-try{Object.assign(mem,JSON.parse(localStorage.getItem("mr2")||"{}"))}catch(e){}
-const save=()=>{try{localStorage.setItem("mr2",JSON.stringify(mem))}catch(e){}};
-function apply(){document.documentElement.dataset.theme=mem.theme;document.documentElement.style.setProperty("--fs",mem.fs+"px")}
+let mem={best:{}};
+try{const saved=JSON.parse(localStorage.getItem("mr2")||"{}");mem.best=saved.best||{}}catch(e){}
+const save=()=>{try{localStorage.setItem("mr2",JSON.stringify({best:mem.best}))}catch(e){}};
+function apply(){document.documentElement.dataset.theme="light";document.documentElement.style.setProperty("--fs","16px")}
 const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
 let view={name:"home"},Q=null,query="";
 
 function head(title,idx,back){return `<div class="top"><div class="w"><div class="bar">
 <button class="ib" data-a="${back||"home"}" aria-label="Close">✕</button>
 <button class="deck" data-a="home"><span class="sq" style="background:${COL[idx]||COL[0]}"></span>${esc(title)} ⌄</button>
-<span><button class="ib" data-a="share" aria-label="Share">⤴</button><button class="ib" data-a="settings" aria-label="Settings">⚙︎</button></span></div>`}
+<button class="ib" data-a="share" aria-label="Share">⤴</button></div>`}
 
 function home(){
- app.innerHTML=`<div class="top"><div class="w bar"><b style="font-size:1.1rem;font-weight:800">Midterm Reviewer</b><button class="ib" data-a="settings" aria-label="Settings">⚙︎</button></div></div>
+ app.innerHTML=`<div class="top"><div class="w bar"><b style="font-size:1.1rem;font-weight:800">Midterm Reviewer</b><button class="act" data-a="reset-scores" style="padding:9px 14px">Reset scores</button></div></div>
  <div class="w"><h1 class="t">Your midterm study hub</h1><p class="sub">Learn the concepts first, practice conversions separately, then keep testing yourself across every topic.</p><h2 style="margin:24px 0 10px;font-size:1.05rem">Study modes</h2><button class="topic" data-a="binary"><span class="badge" style="background:#60a5fa"></span><span><b>Binary Conversion Lab</b><small>Dedicated conversion test · binary to decimal, octal, hexadecimal, and other bases</small></span></button><button class="topic" data-a="infinite"><span class="badge" style="background:#a78bfa"></span><span><b>Infinite Mixed Practice</b><small>Endless questions from all topics · unlimited hearts · no game over</small></span></button><h2 style="margin:24px 0 10px;font-size:1.05rem">Lesson reviews</h2>`+
  TOPICS.map((t,i)=>{const b=mem.best[t.id];return `<button class="topic" data-t="${i}"><span class="badge" style="background:${COL[i]}"></span><span><b>${esc(t.title)}</b><small>${esc(t.sub)} · ${t.quiz.length} questions${b!=null?` · Best ${b}%`:""}</small></span></button>`}).join("")+`</div>`;
 }
@@ -145,10 +144,12 @@ function pick(k){const it=Q.items[Q.k],ok=it.o[k].c;Q.res[Q.k]={p:k,ok};
  Q.elim=[];quiz()}
 function toast(m){const d=document.createElement("div");d.textContent=m;d.style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:12px 20px;border-radius:99px;font-weight:800;z-index:20";document.body.append(d);setTimeout(()=>d.remove(),1800)}
 async function share(text){try{if(navigator.share)await navigator.share({text});else{await navigator.clipboard.writeText(text);toast("Copied to clipboard")}}catch(e){}}
-function settings(){const m=document.createElement("div");m.className="modal";m.innerHTML=`<div class="sheet"><h2>Settings</h2><button class="act" data-s="theme">Theme: ${mem.theme}</button><button class="act" data-s="minus">A−  Smaller text</button><button class="act" data-s="plus">A+  Larger text</button><button class="act" data-s="reset">Reset saved scores</button><button class="go" data-s="close">Done</button></div>`;
- m.onclick=e=>{const s=e.target.dataset.s;if(e.target==m||s=="close")return m.remove();
-  if(s=="theme")mem.theme=mem.theme=="dark"?"light":"dark";if(s=="minus")mem.fs=Math.max(13,mem.fs-1);if(s=="plus")mem.fs=Math.min(24,mem.fs+1);if(s=="reset")mem.best={};
-  save();apply();if(s=="theme")e.target.textContent="Theme: "+mem.theme;if(s=="reset")toast("Scores reset")};document.body.append(m)}
+function resetScores(){
+ if(!confirm("Reset all saved best scores? This cannot be undone."))return;
+ mem.best={};save();
+ if(view.name==="home")home();
+ toast("Scores reset");
+}
 document.addEventListener("click",e=>{
  const b=e.target.closest("[data-a],[data-t],[data-tab],[data-o]");if(!b||b.closest(".modal"))return;
  const d=b.dataset;
@@ -161,7 +162,7 @@ document.addEventListener("click",e=>{
   case"start":return start(view.i);
   case"binary":return startBinary();
   case"infinite":return startInfinite();
-  case"settings":return settings();
+  case"reset-scores":return resetScores();
   case"share":return share("Midterm Reviewer"+(view.i!=null?": "+TOPICS[view.i].title:""));
   case"prev":Q.k--;Q.elim=[];return quiz();
   case"next":Q.k++;Q.elim=[];if(Q.infinite){Q.items.push(Q.mode==="binary"?makeBinaryItem():makeInfiniteItem());}return quiz();
